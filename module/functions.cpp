@@ -85,6 +85,7 @@ void cartesian2polar(float x, float y, float z, float phi_radius, float* r, floa
 	else if (y == 0 && x > 0) *theta = 0;
 	else if (y == 0 && x < 0) *theta = M_PI;
 	else *theta = atan2(y, x);
+	if (*theta < 0) *theta += 2.0 * M_PI; // 右アームのみ
 
 	// phiに回転半径が存在するので極座標とは異なる計算法になる
 	double R = sqrt2(x, y);

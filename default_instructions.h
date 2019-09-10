@@ -13,7 +13,7 @@
 
 
 // (アームの取り付け位置のオフセット + 土台中心から駆動部基準点までのオフセット) : フィールド左端手前が基準
-#define X_OFFSET 234.0f
+#define X_OFFSET 1056.0f // 左アームから822mmの距離
 #define Y_OFFSET -127.0f
 #define Z_OFFSET 633.5f
 // Φの回転半径
@@ -24,7 +24,7 @@
 
 Instruction neutral_inst(float duration, enum Mode::Coordinate coord, enum Mode::Suction suction)
 {
-	return Instruction(220, 80, INIT_Z, duration, Mode::Neutral, coord, Mode::NonLinearAcc, suction, Mode::Backward);
+	return Instruction(X_OFFSET, 80, INIT_Z, duration, Mode::Neutral, coord, Mode::NonLinearAcc, suction, Mode::Backward);
 }
 
 Instruction own_area_inst(float x, float y, float z, enum Mode::Accelaration acc, enum Mode::Slider slider)
@@ -74,46 +74,21 @@ Instruction default_inst[INST_NUM] =
 };
 
 
-#define FAST_ONE_GO_INST_NUM 2
-Instruction fast_one_go_inst[FAST_ONE_GO_INST_NUM] =
-{
-		neutral_inst(1.5, Mode::Polar, Mode::Release),
-		own_area_inst(220, 120, 160, Mode::NonLinearAcc, Mode::Backward)
-};
-
-#define FAST_ONE_RETURN_INST_NUM 6
-Instruction fast_one_return_inst[FAST_ONE_RETURN_INST_NUM] =
-{
-		neutral_inst(1.5, Mode::Cartesian, Mode::Hold),
-
-		Instruction(346,	-144,	INIT_Z,	1,
-				Mode::ShootingBox,	Mode::Polar,	Mode::NonLinearAcc, Mode::Hold, Mode::Backward),
-		Instruction(348,	-144,	561,	1,
-				Mode::ShootingBox,	Mode::Polar,	Mode::NonLinearAcc, Mode::Hold, Mode::Backward),
-		Instruction(348,	-144,	561,	0.5,
-				Mode::Stay,			Mode::Polar,	Mode::NonLinearAcc, Mode::Release, Mode::Backward),
-		Instruction(346,	-144,	INIT_Z,	1,
-				Mode::Init,			Mode::Polar,	Mode::NonLinearAcc, Mode::Release, Mode::Backward),
-
-		neutral_inst(1, Mode::Polar, Mode::Release)
-};
-
-
 #define PUT_WORK_INST_NUM 6
 Instruction put_work_inst[PUT_WORK_INST_NUM] =
 {
 		neutral_inst(2, Mode::Cartesian, Mode::Hold),
 
-		Instruction(504,	-160,	INIT_Z,	1,
+		Instruction(650,	-160,	INIT_Z,	1.5,
 				Mode::ShootingBox,	Mode::Polar,	Mode::NonLinearAcc, Mode::Hold, Mode::Backward),
-		Instruction(485,	-154,	500,	1,
+		Instruction(680,	-154,	500,	1,
 				Mode::ShootingBox,	Mode::Polar,	Mode::NonLinearAcc, Mode::Hold, Mode::Backward),
-		Instruction(485,	-154,	500,	0.5,
+		Instruction(680,	-154,	500,	0.5,
 				Mode::Stay,			Mode::Polar,	Mode::NonLinearAcc, Mode::Release, Mode::Backward),
-		Instruction(504,	-160,	INIT_Z,	1,
+		Instruction(650,	-160,	INIT_Z,	1,
 				Mode::Init,			Mode::Polar,	Mode::NonLinearAcc, Mode::Release, Mode::Backward),
 
-		neutral_inst(1, Mode::Polar, Mode::Release)
+		neutral_inst(1.5, Mode::Polar, Mode::Release)
 };
 
 #endif /* DEFAULT_INSTRUCTIONS_H_ */

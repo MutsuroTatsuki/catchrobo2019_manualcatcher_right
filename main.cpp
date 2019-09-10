@@ -11,9 +11,9 @@
 
 PolarArm catcher(X_OFFSET, Y_OFFSET, Z_OFFSET, PHI_RADIUS, SLIDER_OFFSET);
 
-JointMotor<FnkOut> motor_r(&pwm_r, &enc_r, 1);
+JointMotor<FnkOut> motor_r(&pwm_r, &enc_r, -1);
 JointMotor<PwmOut> motor_theta(&pwm_theta, &enc_theta, 1);
-JointMotor<PwmOut> motor_phi(&pwm_phi, &enc_phi, -1);
+JointMotor<PwmOut> motor_phi(&pwm_phi, &enc_phi, 1);
 
 Timer pid_timer;
 Timer timer;
@@ -24,9 +24,9 @@ void led_all(int onoff)
 	led1.write(onoff); led2.write(onoff); led3.write(onoff); led4.write(onoff);
 }
 
-#define X_ADJUST (x.pos_adjust/4)
-#define Y_ADJUST (y.pos_adjust/4)
-#define Z_ADJUST (z.pos_adjust/4)
+#define X_ADJUST (x.pos_adjust/2)
+#define Y_ADJUST (y.pos_adjust/2)
+#define Z_ADJUST (z.pos_adjust/2)
 
 #define BUFF_ARRIVE_X 15 // [mm]
 #define BUFF_ARRIVE_Y 10
@@ -95,14 +95,13 @@ int main(){
 	Monitor_cartesian z;
 
 	Monitor_polar r(0.009, 0, 0.00001);
-	Monitor_polar theta(0.9, 0, 0.06);
+	Monitor_polar theta(3.5, 0, 0.06);
 	Monitor_polar phi(0.6, 0, 0.01);
 
 	int servo_duty;
 	int fan_duty = 1020;
 
 	float now_t;
-	bool is_first = true; // 最初のneutral指令
 
 	Queue<Instruction> queue_inst;
 
@@ -142,34 +141,21 @@ int main(){
 		if (ps::maru) {
 			inst.suction = Mode::Hold;
 		}
-		if (ps::R1 && ps::R2 && ps::L1 && ps::L2) {
-			// shooting
-		}
 
 		// コントローラからqueue_instにpush
-		if (ps::start && inst.suction == Mode::Release) { // neutralへ・最初の1回は1個取り
+		if (ps::start && inst.suction == Mode::Release) {
 			queue_inst.push(neutral_inst(2, inst.coord, inst.suction));
-			if (is_first) {
-				for (int i=0; i<FAST_ONE_GO_INST_NUM; i++) queue_inst.push(fast_one_go_inst[i]);
-			}
 		}
 		if (ps::batu && inst.suction == Mode::Release) { // 自陣へ向かう
 			queue_inst.push(neutral_inst(1.5, Mode::Polar, Mode::Release));
-			queue_inst.push(own_area_inst(220, 120, 160, Mode::NonLinearAcc, Mode::Backward));
+			queue_inst.push(own_area_inst(X_OFFSET, 120, 200, Mode::NonLinearAcc, Mode::Backward));
 		}
 		if (ps::sankaku && inst.suction == Mode::Release) { // 共通エリアへ向かう
 			queue_inst.push(neutral_inst(1.5, Mode::Polar, Mode::Release));
-			queue_inst.push(common_area_inst(220, 600, INIT_Z, Mode::NonLinearAcc));
+			queue_inst.push(common_area_inst(X_OFFSET, 600, INIT_Z, Mode::NonLinearAcc));
 		}
 		if (ps::sikaku && (inst.state == Mode::OwnArea || inst.state == Mode::CommonArea) && inst.suction == Mode::Hold) { // 集荷
-			if (is_first) {
-				// 1個用の場所へ
-				for (int i=0; i<FAST_ONE_RETURN_INST_NUM; i++) queue_inst.push(fast_one_return_inst[i]);
-				is_first = false;
-			}
-			else {
-				for (int i=0; i<PUT_WORK_INST_NUM; i++) queue_inst.push(put_work_inst[i]);
-			}
+			for (int i=0; i<PUT_WORK_INST_NUM; i++) queue_inst.push(put_work_inst[i]);
 			x.cnt_arrive = WAIT_ARRIVE*2;
 			y.cnt_arrive = WAIT_ARRIVE*2;
 			z.cnt_arrive = WAIT_ARRIVE*2;

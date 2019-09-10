@@ -15,7 +15,7 @@
 
 // x,y,zの初期値
 // フィールド基準
-#define INIT_X 346.0f
+#define INIT_X 944.0f //X_OFFSET - R_OFFSET
 #define INIT_Y -127.0f
 #define INIT_Z 633.5+75.8
 

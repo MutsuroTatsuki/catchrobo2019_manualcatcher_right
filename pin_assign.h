@@ -31,13 +31,10 @@ int R1, R2, L1, L2;
 }
 
 FnkOut pwm_r(p24, p25);
-PwmOut pwm_theta(p23);
-PwmOut pwm_phi(p22);
+PwmOut pwm_theta(p22);
+PwmOut pwm_phi(p23);
 
 DigitalOut slider(p5);
-DigitalOut one_holder(p6);
-DigitalOut work_holder(p20);
-DigitalOut shooter(p8);
 
 #define SERVO_OFFSET (M_PI/2.0)
 inline float degree2rad(float degree) { return M_PI * degree / 180.0; }
@@ -54,18 +51,18 @@ Fan<SoftPWM> fan(p21);
 
 #define R_MM_PER_PULSE ((30.0 * M_PI) / 800.0)
 #define R_OFFSET 112.0 //[mm]
-Encoder enc_r(p15, p16, R_MM_PER_PULSE, R_OFFSET);
+Encoder enc_r(p10, p9, R_MM_PER_PULSE, R_OFFSET);
 
 // 800pulse = phi:1/5回転 = phi:2PI/5rad
 // rad/pulse = (2PI*1/5) / 800
 #define PHI_RAD_PER_PULSE (2.0 * M_PI * (15.0 / 75.0) / 800.0)
 #define PHI_OFFSET degree2rad(90)
-Encoder enc_phi(p10, p9, PHI_RAD_PER_PULSE, PHI_OFFSET);
+Encoder enc_phi(p29, p30, PHI_RAD_PER_PULSE, PHI_OFFSET);
 
 // 800pulse = theta:42/180回転 = theta:2PI*42/180rad
 // rad/pulse = (2PI*42/180) / 800
 #define THETA_RAD_PER_PULSE (2.0 * M_PI * (42.0 / 180) / 800.0)
-#define THETA_OFFSET 0
+#define THETA_OFFSET M_PI
 Encoder enc_theta(p28, p27, THETA_RAD_PER_PULSE, THETA_OFFSET);
 
 DigitalOut led1(LED1);
