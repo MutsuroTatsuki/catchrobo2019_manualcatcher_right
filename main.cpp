@@ -30,8 +30,8 @@ void led_all(int onoff)
 
 #define BUFF_ARRIVE_X 15 // [mm]
 #define BUFF_ARRIVE_Y 10
-#define BUFF_ARRIVE_Z 15
-#define WAIT_ARRIVE 80
+#define BUFF_ARRIVE_Z 25
+#define WAIT_ARRIVE 60
 inline bool has_arrived(int cnt_x, int cnt_y, int cnt_z)
 {
 	return ((cnt_x >= WAIT_ARRIVE) && (cnt_y >= WAIT_ARRIVE) && (cnt_z >= WAIT_ARRIVE));
@@ -46,8 +46,8 @@ void ps_command()
 	ps::sankaku = pspad.BUTTON.BIT.SANKAKU && !pspad.PREV.BUTTON.BIT.SANKAKU;
 	ps::sikaku = pspad.BUTTON.BIT.SIKAKU && !pspad.PREV.BUTTON.BIT.SIKAKU;
 	ps::batu = pspad.BUTTON.BIT.BATU && !pspad.PREV.BUTTON.BIT.BATU;
-	ps::up = pspad.BUTTON.BIT.UP;
-	ps::down = pspad.BUTTON.BIT.DOWN;
+	ps::up = pspad.BUTTON.BIT.UP && !pspad.PREV.BUTTON.BIT.UP;
+	ps::down = pspad.BUTTON.BIT.DOWN && !pspad.PREV.BUTTON.BIT.DOWN;
 	ps::left_x = pspad.left_x;
 	ps::left_y = pspad.left_y;
 	ps::right_y = pspad.right_y;
@@ -94,9 +94,9 @@ int main(){
 	Monitor_cartesian y;
 	Monitor_cartesian z;
 
-	Monitor_polar r(0.009, 0, 0.00001);
+	Monitor_polar r(0.0072, 0, 0.000015);
 	Monitor_polar theta(3.5, 0, 0.06);
-	Monitor_polar phi(0.6, 0, 0.01);
+	Monitor_polar phi(3.5, 0, 0.004);
 
 	int servo_duty;
 	int fan_duty = 1020;
@@ -136,10 +136,15 @@ int main(){
 		x.pos_adjust += ps::left_x;
 		y.pos_adjust += ps::left_y;
 		z.pos_adjust += ps::right_y;
-//		if (ps::up) inst.slider = Mode::Forward;
-//		else if (ps::down) inst.slider = Mode::Backward;
 		if (ps::maru) {
-			inst.suction = Mode::Hold;
+			if (inst.state == Mode::OwnArea || inst.state == Mode::CommonArea) {
+				inst.suction = (inst.suction == Mode::Hold ? Mode::Release : Mode::Hold);
+			}
+			else if (inst.state == Mode::ShootingBox) {
+				inst.suction = Mode::Release;
+				queue_inst.push(stay_inst(inst.x+X_ADJUST, inst.y+Y_ADJUST, inst.z+Z_ADJUST, 0.5, Mode::Release, inst.slider));
+				queue_inst.push(neutral_inst(2, Mode::Polar, Mode::Release));
+			}
 		}
 
 		// コントローラからqueue_instにpush
@@ -148,17 +153,26 @@ int main(){
 		}
 		if (ps::batu && inst.suction == Mode::Release) { // 自陣へ向かう
 			queue_inst.push(neutral_inst(1.5, Mode::Polar, Mode::Release));
-			queue_inst.push(own_area_inst(X_OFFSET, 120, 200, Mode::NonLinearAcc, Mode::Backward));
+			queue_inst.push(own_area_inst(X_OFFSET, 230, 170, Mode::NonLinearAcc));
 		}
 		if (ps::sankaku && inst.suction == Mode::Release) { // 共通エリアへ向かう
 			queue_inst.push(neutral_inst(1.5, Mode::Polar, Mode::Release));
-			queue_inst.push(common_area_inst(X_OFFSET, 600, INIT_Z, Mode::NonLinearAcc));
+			queue_inst.push(common_area_inst(X_OFFSET, 500, 670, Mode::NonLinearAcc));
 		}
 		if (ps::sikaku && (inst.state == Mode::OwnArea || inst.state == Mode::CommonArea) && inst.suction == Mode::Hold) { // 集荷
-			for (int i=0; i<PUT_WORK_INST_NUM; i++) queue_inst.push(put_work_inst[i]);
+			queue_inst.push(neutral_inst(2, Mode::Cartesian, Mode::Hold));
+			queue_inst.push(above_box_front_inst(1.5, Mode::Polar, Mode::Hold));
+			// 集荷ステップに強制的に進ませる
 			x.cnt_arrive = WAIT_ARRIVE*2;
 			y.cnt_arrive = WAIT_ARRIVE*2;
 			z.cnt_arrive = WAIT_ARRIVE*2;
+		}
+
+		if (ps::up && inst.state == Mode::ShootingBox) {
+			queue_inst.push(above_box_front_inst(1, Mode::Cartesian, Mode::Hold));
+		}
+		if (ps::down && inst.state == Mode::ShootingBox) {
+			queue_inst.push(above_box_rear_inst(1, Mode::Cartesian, Mode::Hold));
 		}
 
 		now_t = timer.read();
@@ -168,7 +182,7 @@ int main(){
 		catcher.calc_next();
 
 		r.pos_next = limit(catcher.get_r_next(), 651.0, R_OFFSET);
-		theta.pos_next = catcher.get_theta_next();
+		theta.pos_next = limit(catcher.get_theta_next(), degree2rad(220), 0.0);
 		phi.pos_next = limit(catcher.get_phi_next(), M_PI, M_PI/2.0);
 
 		// 次の位置に移動
@@ -178,7 +192,7 @@ int main(){
 		// y方向スライド
 		slider.write(inst.slider);
 		// ファン
-		if (inst.suction == Mode::Hold)	fan_duty = fan.on(1300);
+		if (inst.suction == Mode::Hold)	fan_duty = fan.on(1350);
 		else fan_duty = fan.off();
 
 		// 現在値取得
@@ -226,15 +240,15 @@ int main(){
 			}
 		}
 
-		pc.printf("now: %2.2f  q: %d  ", now_t, queue_inst.length());
+//		pc.printf("now: %2.2f  q: %d  ", now_t, queue_inst.length());
 		pc.printf("x: %4.1f->%4.1f   y: %4.1f->%4.1f  z: %4.1f->%4.1f  ",
 				x.pos_now, inst.x+X_ADJUST, y.pos_now, inst.y+Y_ADJUST, z.pos_now, inst.z+Z_ADJUST);
 		pc.printf("r: %4.1f->%4.1f  theta: %3.1f->%3.1f  phi: %3.1f->%3.1f  ",
 				r.pos_now, r.pos_next,
 				rad2degree(theta.pos_now), rad2degree(theta.pos_next),
 				rad2degree(phi.pos_now), rad2degree(phi.pos_next));
-//		pc.printf("duty: %1.4f %1.4f %1.4f  ", r.duty, theta.duty, phi.duty);
-		pc.printf("servo: %4d  fan: %4d  ", servo_duty, fan_duty);
+		pc.printf("duty: %1.4f %1.4f %1.4f  ", r.duty, theta.duty, phi.duty);
+//		pc.printf("servo: %4d  fan: %4d  ", servo_duty, fan_duty);
 //		pc.printf("start:%d ", ps::start);
 //		pc.printf("maru:%d sankaku:%d sikaku:%d batu:%d ", ps::maru, ps::sankaku, ps::sikaku, ps::batu);
 //		pc.printf("up:%d down:%d ry:%d lx:%d ly:%d", ps::up, ps::down, ps::right_y, ps::left_x, ps::left_y);
