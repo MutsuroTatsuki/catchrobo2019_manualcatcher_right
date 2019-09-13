@@ -42,13 +42,13 @@ Instruction common_area_inst(float x, float y, float z, enum Mode::Accelaration 
 
 Instruction above_box_front_inst(float duration, enum Mode::Coordinate coord, enum Mode::Suction suction)
 {
-	return Instruction(800, -130, 650, duration,
+	return Instruction(800, -130, 700, duration,
 			Mode::ShootingBox, coord, Mode::NonLinearAcc, suction, Mode::Forward);
 }
 
 Instruction above_box_rear_inst(float duration, enum Mode::Coordinate coord, enum Mode::Suction suction)
 {
-	return Instruction(800, -350, 650, duration,
+	return Instruction(670, -310, 700, duration,
 			Mode::ShootingBox, coord, Mode::NonLinearAcc, suction, Mode::Backward);
 }
 
