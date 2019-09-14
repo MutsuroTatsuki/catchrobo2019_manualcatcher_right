@@ -171,11 +171,11 @@ int main(){
 		}
 		if (ps::batu && inst.suction == Mode::Release) { // 自陣へ向かう
 			queue_inst.push(neutral_inst(1.5, Mode::Polar, Mode::Release));
-			queue_inst.push(own_area_inst(X_OFFSET, 230, 150, Mode::NonLinearAcc));
+			queue_inst.push(own_area_inst(X_OFFSET, 230, 140, Mode::NonLinearAcc));
 		}
 		if (ps::sankaku && inst.suction == Mode::Release) { // 共通エリアへ向かう
 			queue_inst.push(neutral_inst(1.5, Mode::Polar, Mode::Release));
-			queue_inst.push(common_area_inst(X_OFFSET, 500, 630, Mode::NonLinearAcc));
+			queue_inst.push(common_area_inst(X_OFFSET, 500, 620, Mode::NonLinearAcc));
 		}
 		if (ps::sikaku && (inst.state == Mode::OwnArea || inst.state == Mode::CommonArea) && inst.suction == Mode::Hold) { // 集荷
 			queue_inst.push(neutral_inst(2, Mode::Cartesian, Mode::Hold));
